@@ -1,87 +1,74 @@
 import Layout from "./Layout.jsx";
 
 import Home from "./Home";
-
-import Onboarding from "./Onboarding";
-
 import OnboardingNew from "./OnboardingNew";
-
 import Perihelion from "./Perihelion";
-
 import ProfileSettings from "./ProfileSettings";
-
 import Session from "./Session";
-
 import Welcome from "./Welcome";
 
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
 
-const PAGES = {
-    
-    Home: Home,
-    
-    Onboarding: Onboarding,
-    
-    OnboardingNew: OnboardingNew,
-    
-    Perihelion: Perihelion,
-    
-    ProfileSettings: ProfileSettings,
-    
-    Session: Session,
-    
-    Welcome: Welcome,
-    
+// Canonical lowercase route map (what we standardize on)
+const ROUTE_ALIASES = {
+  home: "/",
+  welcome: "/welcome",
+  onboardingnew: "/onboarding",
+  onboarding: "/onboarding",
+  perihelion: "/perihelion",
+  profilesettings: "/profile",
+  session: "/session",
+};
+
+function getCanonicalPath(pathname) {
+  const clean = pathname.replace(/\/+$/, "");
+  const last = (clean.split("/").pop() || "").split("?")[0].toLowerCase();
+  return ROUTE_ALIASES[last] || pathname;
 }
 
-function _getCurrentPage(url) {
-    if (url.endsWith('/')) {
-        url = url.slice(0, -1);
-    }
-    let urlLastPart = url.split('/').pop();
-    if (urlLastPart.includes('?')) {
-        urlLastPart = urlLastPart.split('?')[0];
-    }
-
-    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
-    return pageName || Object.keys(PAGES)[0];
-}
-
-// Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
-    const location = useLocation();
-    const currentPage = _getCurrentPage(location.pathname);
-    
-    return (
-        <Layout currentPageName={currentPage}>
-            <Routes>            
-                
-                    <Route path="/" element={<Home />} />
-                
-                
-                <Route path="/Home" element={<Home />} />
-                
-                <Route path="/Onboarding" element={<Onboarding />} />
-                
-                <Route path="/OnboardingNew" element={<OnboardingNew />} />
-                
-                <Route path="/Perihelion" element={<Perihelion />} />
-                
-                <Route path="/ProfileSettings" element={<ProfileSettings />} />
-                
-                <Route path="/Session" element={<Session />} />
-                
-                <Route path="/Welcome" element={<Welcome />} />
-                
-            </Routes>
-        </Layout>
-    );
+  const location = useLocation();
+  const canonical = getCanonicalPath(location.pathname);
+
+  // Redirect old Base44/TitleCase routes to canonical
+  if (canonical !== location.pathname) {
+    return <Navigate to={canonical} replace />;
+  }
+
+  const currentPage =
+    Object.entries(ROUTE_ALIASES).find(([, p]) => p === location.pathname)?.[0] || "home";
+
+  return (
+    <Layout currentPageName={currentPage}>
+      <Routes>
+        {/* Canonical routes */}
+        <Route path="/" element={<Welcome />} />
+        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/onboarding" element={<OnboardingNew />} />
+        <Route path="/perihelion" element={<Perihelion />} />
+        <Route path="/profile" element={<ProfileSettings />} />
+        <Route path="/session" element={<Session />} />
+
+        {/* Legacy routes (kept temporarily) */}
+        <Route path="/Home" element={<Navigate to="/" replace />} />
+        <Route path="/Welcome" element={<Navigate to="/welcome" replace />} />
+        <Route path="/OnboardingNew" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/Onboarding" element={<Navigate to="/onboarding" replace />} />
+        <Route path="/Perihelion" element={<Navigate to="/perihelion" replace />} />
+        <Route path="/ProfileSettings" element={<Navigate to="/profile" replace />} />
+        <Route path="/Session" element={<Navigate to="/session" replace />} />
+
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
+      </Routes>
+    </Layout>
+  );
 }
 
 export default function Pages() {
-    return (
-        <Router>
-            <PagesContent />
-        </Router>
-    );
+  return (
+    <Router>
+      <PagesContent />
+    </Router>
+  );
 }
