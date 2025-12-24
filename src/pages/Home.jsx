@@ -1,7 +1,5 @@
-cat > src/pages/Home.jsx <<'JSX'
 import { Navigate } from "react-router-dom";
 
 export default function Home() {
   return <Navigate to="/welcome" replace />;
 }
-JSX

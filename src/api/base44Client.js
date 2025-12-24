@@ -1,8 +1,59 @@
-import { createClient } from '@base44/sdk';
-// import { getAccessToken } from '@base44/sdk/utils/auth-utils';
+// src/api/base44Client.js
+// Local stub so the app runs without Base44.
+// Persists a fake "user" in localStorage so flags survive refresh.
 
-// Create a client with authentication required
-export const base44 = createClient({
-  appId: "694b4f2681a1c65e4989bb6f", 
-  requiresAuth: true // Ensure authentication is required for all operations
-});
+const STORAGE_KEY = "perihelion.devUser.v1";
+
+function loadUser() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {
+    id: "dev-user",
+    email: "dev@local",
+    hasSeenWelcome: false,
+    hasCompletedOnboarding: false,
+  };
+}
+
+function saveUser(user) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+  return user;
+}
+
+function updateUser(patch) {
+  const next = { ...loadUser(), ...patch };
+  return saveUser(next);
+}
+
+// Exported client (matches what your pages expect)
+export const base44 = {
+  auth: {
+    async me() {
+      return loadUser();
+    },
+    async signOut() {
+      // optional helper
+      saveUser({
+        id: "dev-user",
+        email: "dev@local",
+        hasSeenWelcome: false,
+        hasCompletedOnboarding: false,
+      });
+      return true;
+    },
+  },
+
+  // Minimal shape if any page calls "entities.User.update(...)"
+  entities: {
+    User: {
+      async update(_id, patch) {
+        return updateUser(patch);
+      },
+      async meUpdate(patch) {
+        return updateUser(patch);
+      },
+    },
+  },
+};
